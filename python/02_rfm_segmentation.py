@@ -49,7 +49,8 @@ def assign_segment(row):
         return "Needs Attention"
 # apply segmentation
 rfm['Segment']=rfm.apply(assign_segment,axis=1)
-print(rfm.head())
+print(rfm.head(50))
+
 
 
 
