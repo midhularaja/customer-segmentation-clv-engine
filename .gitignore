@@ -1,2 +1,7 @@
 #ignore all files inside raw data
 raw_dataset/*.csv
+
+# Ignore virtual environment folder
+venv/
+__pycache__/
+*.pyc
