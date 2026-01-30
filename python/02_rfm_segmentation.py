@@ -66,5 +66,42 @@ champions = rfm[rfm["Segment"] == "Champions"]
 print("\nChampions segment customers:", champions.shape[0])
 print("Average spending of Champions:", champions["Monetary"].mean())
 
+# Rename columns to lowercase and consistent names
+rfm = rfm.rename(columns={
+    "Recency": "recency",
+    "Frequency": "frequency",
+    "Monetary": "monetary",
+    "R_Score": "r_score",
+    "F_Score": "f_score",
+    "M_Score": "m_score",
+    "Segment": "segment"
+})
 
+rfm["rfm_score"] = (
+    rfm["r_score"].astype(str) +
+    rfm["f_score"].astype(str) +
+    rfm["m_score"].astype(str)
+)
+
+# save to mysql
+rfm_final = rfm[
+    [
+        "customer_key",
+        "recency",
+        "frequency",
+        "monetary",
+        "r_score",
+        "f_score",
+        "m_score",
+        "rfm_score",
+        "segment"
+    ]
+]
+
+rfm_final.to_sql(
+    "rfm_customer_segments",
+    con=engine,
+    if_exists="replace",
+    index=False
+)
 
