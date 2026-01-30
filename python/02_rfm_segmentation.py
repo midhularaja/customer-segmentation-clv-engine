@@ -35,7 +35,7 @@ def assign_segment(row):
     m = int(row["M_Score"])
     
     # Behavioral patterns 
-    if r >= 4 and f >= 4:
+    if r >= 4 and f >= 4 and m >= 4:
         return "Champions"
     elif r >= 3 and f >= 3:
         return "Loyal Customers"
@@ -58,7 +58,13 @@ def assign_segment(row):
 rfm['Segment']=rfm.apply(assign_segment,axis=1)
 print(rfm.head(50))
 
+# validation check
+avg_monetary_segment = rfm.groupby("Segment")["Monetary"].mean().sort_values(ascending=False)
+print("Average Monetary per Segment:",avg_monetary_segment)
 
+champions = rfm[rfm["Segment"] == "Champions"]
+print("\nChampions segment customers:", champions.shape[0])
+print("Average spending of Champions:", champions["Monetary"].mean())
 
 
 
