@@ -106,6 +106,7 @@ rfm_final = rfm[[
     "segment",
     "lastpurchase"   
 ]]
+rfm_final = rfm_final.rename(columns={"lastpurchase": "last_purchase_date"})
 
 rfm_final.to_sql(
     "rfm_customer_segments",
