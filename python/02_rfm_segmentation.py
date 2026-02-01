@@ -1,40 +1,62 @@
 import pandas as pd
 from sqlalchemy import create_engine
+from sqlalchemy.types import Date  
 
-engine = create_engine("mysql+pymysql://root:Midhu%4029@localhost/customer_segmentation_db")
+engine = create_engine(
+    "mysql+pymysql://root:Midhu%4029@localhost/customer_segmentation_db"
+)
 
-fact_sales = pd.read_sql("select * from fact_sales",engine)
+fact_sales = pd.read_sql(
+    "SELECT customer_key, InvoiceNo, total_amount, date_key FROM fact_sales",
+    engine
+)
 
-fact_sales["InvoiceDate"]=pd.to_datetime(fact_sales["date_key"].astype(str), format="%Y%m%d")
-# set reference date for recency
-analysis_date = fact_sales["InvoiceDate"].max()+pd.Timedelta(days=1)
+fact_sales["invoice_date"] = pd.to_datetime(
+    fact_sales["date_key"].astype(str),
+    format="%Y%m%d",
+    errors="coerce"  
+)
 
-# calculate rfm matrics
+analysis_date = fact_sales["invoice_date"].max() + pd.Timedelta(days=1)
+
 rfm = fact_sales.groupby("customer_key").agg({
-    "InvoiceDate": lambda x: (analysis_date - x.max()).days,  
-    "InvoiceNo": "nunique",                                  
-    "total_amount": "sum"                                    
+    "invoice_date": [
+        lambda x: (analysis_date - x.max()).days,  
+        "max"                                      
+    ],
+    "InvoiceNo": "nunique",                       
+    "total_amount": "sum"                         
 }).reset_index()
 
-rfm.columns = ["customer_key", "Recency", "Frequency", "Monetary"]
-print(rfm.head())
 
-# RFM scoring 1 to 5
-# recency
-rfm["R_Score"] = pd.qcut(rfm["Recency"], 5, labels=[5,4,3,2,1],duplicates="drop")
-# Frequency
-rfm["F_Score"] = pd.qcut(rfm["Frequency"].rank(method="first"), 5, labels=[1,2,3,4,5])
-# Monetary
-rfm["M_Score"] = pd.qcut(rfm["Monetary"], 5, labels=[1,2,3,4,5],duplicates="drop")
+rfm.columns = [
+    "customer_key",
+    "recency",
+    "last_purchase_date",
+    "frequency",
+    "monetary"
+]
 
+rfm["last_purchase_date"] = pd.to_datetime(rfm["last_purchase_date"])
 
-# assign segments
+rfm["r_score"] = pd.qcut(
+    rfm["recency"], 5, labels=[5, 4, 3, 2, 1], duplicates="drop"
+)
+
+rfm["f_score"] = pd.qcut(
+    rfm["frequency"].rank(method="first"), 5, labels=[1, 2, 3, 4, 5]
+)
+
+rfm["m_score"] = pd.qcut(
+    rfm["monetary"], 5, labels=[1, 2, 3, 4, 5], duplicates="drop"
+)
+
+# Assign segments 
 def assign_segment(row):
-    r = int(row["R_Score"])
-    f = int(row["F_Score"])
-    m = int(row["M_Score"])
-    
-    # Behavioral patterns 
+    r = int(row["r_score"])
+    f = int(row["f_score"])
+    m = int(row["m_score"])
+
     if r >= 4 and f >= 4 and m >= 4:
         return "Champions"
     elif r >= 3 and f >= 3:
@@ -53,29 +75,34 @@ def assign_segment(row):
         return "About to Sleep"
     else:
         return "Needs Attention"
-    
-# apply segmentation
-rfm['Segment']=rfm.apply(assign_segment,axis=1)
-print(rfm.head(50))
 
-# validation check
-avg_monetary_segment = rfm.groupby("Segment")["Monetary"].mean().sort_values(ascending=False)
-print("Average Monetary per Segment:",avg_monetary_segment)
+rfm["segment"] = rfm.apply(assign_segment, axis=1)
 
-champions = rfm[rfm["Segment"] == "Champions"]
-print("\nChampions segment customers:", champions.shape[0])
-print("Average spending of Champions:", champions["Monetary"].mean())
+# Validation check
+avg_monetary_segment = (
+    rfm.groupby("segment")["monetary"]
+    .mean()
+    .sort_values(ascending=False)
+)
+print("\nAverage Monetary by Segment:")
+print(avg_monetary_segment)
 
-# Rename columns to lowercase and consistent names
-rfm = rfm.rename(columns={
-    "Recency": "recency",
-    "Frequency": "frequency",
-    "Monetary": "monetary",
-    "R_Score": "r_score",
-    "F_Score": "f_score",
-    "M_Score": "m_score",
-    "Segment": "segment"
-})
+champions = rfm[rfm["segment"] == "Champions"]
+print("\nChampions Validation:")
+print("Total Champions:", champions.shape[0])
+print("Avg Champion Spend:", champions["monetary"].mean())
+
+dim_customer = pd.read_sql(
+    "SELECT customer_key, Country FROM dim_customer",
+    engine
+)
+
+rfm["customer_key"] = rfm["customer_key"].astype(int)
+dim_customer["customer_key"] = dim_customer["customer_key"].astype(int)
+dim_customer["Country"] = dim_customer["Country"].str.strip()
+
+# Merge customer info
+rfm = rfm.merge(dim_customer, on="customer_key", how="left")
 
 rfm["rfm_score"] = (
     rfm["r_score"].astype(str) +
@@ -83,25 +110,30 @@ rfm["rfm_score"] = (
     rfm["m_score"].astype(str)
 )
 
-# save to mysql
-rfm_final = rfm[
-    [
-        "customer_key",
-        "recency",
-        "frequency",
-        "monetary",
-        "r_score",
-        "f_score",
-        "m_score",
-        "rfm_score",
-        "segment"
-    ]
-]
+
+rfm_final = rfm[[
+    "customer_key",
+    "Country",
+    "recency",
+    "frequency",
+    "monetary",
+    "r_score",
+    "f_score",
+    "m_score",
+    "rfm_score",
+    "segment",
+    "last_purchase_date"
+]]
+
+rfm_final["last_purchase_date"] = rfm_final["last_purchase_date"].dt.date
+
 
 rfm_final.to_sql(
     "rfm_customer_segments",
     con=engine,
     if_exists="replace",
-    index=False
+    index=False,
+    dtype={"last_purchase_date": Date()} 
 )
+
 
