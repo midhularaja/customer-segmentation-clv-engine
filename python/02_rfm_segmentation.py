@@ -1,6 +1,6 @@
 import pandas as pd
 from sqlalchemy import create_engine
-from sqlalchemy.types import Date  
+from sqlalchemy.types import DateTime
 
 engine = create_engine(
     "mysql+pymysql://root:Midhu%4029@localhost/customer_segmentation_db"
@@ -14,7 +14,7 @@ fact_sales = pd.read_sql(
 fact_sales["invoice_date"] = pd.to_datetime(
     fact_sales["date_key"].astype(str),
     format="%Y%m%d",
-    errors="coerce"  
+    errors="coerce"
 )
 
 analysis_date = fact_sales["invoice_date"].max() + pd.Timedelta(days=1)
@@ -22,22 +22,21 @@ analysis_date = fact_sales["invoice_date"].max() + pd.Timedelta(days=1)
 rfm = fact_sales.groupby("customer_key").agg({
     "invoice_date": [
         lambda x: (analysis_date - x.max()).days,  
-        "max"                                      
+        "max"                                    
     ],
     "InvoiceNo": "nunique",                       
-    "total_amount": "sum"                         
+    "total_amount": "sum"                        
 }).reset_index()
-
 
 rfm.columns = [
     "customer_key",
     "recency",
-    "last_purchase_date",
+    "lastpurchase",  
     "frequency",
     "monetary"
 ]
 
-rfm["last_purchase_date"] = pd.to_datetime(rfm["last_purchase_date"])
+rfm["lastpurchase"] = pd.to_datetime(rfm["lastpurchase"])
 
 rfm["r_score"] = pd.qcut(
     rfm["recency"], 5, labels=[5, 4, 3, 2, 1], duplicates="drop"
@@ -51,7 +50,6 @@ rfm["m_score"] = pd.qcut(
     rfm["monetary"], 5, labels=[1, 2, 3, 4, 5], duplicates="drop"
 )
 
-# Assign segments 
 def assign_segment(row):
     r = int(row["r_score"])
     f = int(row["f_score"])
@@ -78,20 +76,6 @@ def assign_segment(row):
 
 rfm["segment"] = rfm.apply(assign_segment, axis=1)
 
-# Validation check
-avg_monetary_segment = (
-    rfm.groupby("segment")["monetary"]
-    .mean()
-    .sort_values(ascending=False)
-)
-print("\nAverage Monetary by Segment:")
-print(avg_monetary_segment)
-
-champions = rfm[rfm["segment"] == "Champions"]
-print("\nChampions Validation:")
-print("Total Champions:", champions.shape[0])
-print("Avg Champion Spend:", champions["monetary"].mean())
-
 dim_customer = pd.read_sql(
     "SELECT customer_key, Country FROM dim_customer",
     engine
@@ -101,7 +85,6 @@ rfm["customer_key"] = rfm["customer_key"].astype(int)
 dim_customer["customer_key"] = dim_customer["customer_key"].astype(int)
 dim_customer["Country"] = dim_customer["Country"].str.strip()
 
-# Merge customer info
 rfm = rfm.merge(dim_customer, on="customer_key", how="left")
 
 rfm["rfm_score"] = (
@@ -109,7 +92,6 @@ rfm["rfm_score"] = (
     rfm["f_score"].astype(str) +
     rfm["m_score"].astype(str)
 )
-
 
 rfm_final = rfm[[
     "customer_key",
@@ -122,18 +104,15 @@ rfm_final = rfm[[
     "m_score",
     "rfm_score",
     "segment",
-    "last_purchase_date"
+    "lastpurchase"   
 ]]
-
-rfm_final["last_purchase_date"] = rfm_final["last_purchase_date"].dt.date
-
 
 rfm_final.to_sql(
     "rfm_customer_segments",
     con=engine,
     if_exists="replace",
     index=False,
-    dtype={"last_purchase_date": Date()} 
+    dtype={"lastpurchase": DateTime()} 
 )
 
 
