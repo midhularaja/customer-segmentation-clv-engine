@@ -113,7 +113,7 @@ rfm_final.to_sql(
     con=engine,
     if_exists="replace",
     index=False,
-    dtype={"lastpurchase": DateTime()} 
+    dtype={"last_purchase_date": DateTime()} 
 )
 
 
