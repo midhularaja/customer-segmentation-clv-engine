@@ -57,22 +57,40 @@ def assign_segment(row):
 
     if r >= 4 and f >= 4 and m >= 4:
         return "Champions"
-    elif r >= 3 and f >= 3:
+
+    elif r >= 3 and f >= 3 and m >= 3:
         return "Loyal Customers"
-    elif r >= 4 and f <= 3:
+
+    elif r >= 4 and f <= 3 and m >= 3:
         return "Potential Loyalist"
-    elif r == 5 and f == 1:
+
+    elif r == 5 and f == 1 and m <= 2:
         return "New Customers"
-    elif r == 4 and f == 1:
+
+    elif r == 4 and f == 1 and m <= 2:
         return "Promising"
-    elif r <= 2 and f >= 3:
+
+    elif r <= 2 and f >= 4 and m >= 4:
+        return "Can't Lose Them"
+
+    elif r <= 2 and f >= 3 and m >= 3:
         return "At Risk"
-    elif r <= 2 and f <= 2:
+
+    elif r <= 2 and f <= 2 and m <= 2:
         return "Hibernating"
+
     elif r == 3 and f <= 2:
         return "About to Sleep"
+
+    elif r >= 4 and f <= 2 and m <= 2:
+        return "Recent Users"
+
+    elif r >= 3 and m <= 2:
+        return "Price Sensitive"
+
     else:
-        return "Needs Attention"
+        return "Lost"
+
 
 rfm["segment"] = rfm.apply(assign_segment, axis=1)
 
