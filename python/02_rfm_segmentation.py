@@ -1,6 +1,8 @@
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.types import DateTime
+import pycountry
+import pycountry_convert as pc
 
 engine = create_engine(
     "mysql+pymysql://root:Midhu%4029@localhost/customer_segmentation_db"
@@ -64,8 +66,8 @@ def assign_segment(row):
     elif r >= 4 and f <= 3 and m >= 3:
         return "Potential Loyalist"
 
-    elif r == 5 and f == 1 and m <= 2:
-        return "New Customers"
+    elif r >= 4 and f <= 2 and m <= 2:
+        return "Recent Users"
 
     elif r == 4 and f == 1 and m <= 2:
         return "Promising"
@@ -73,23 +75,21 @@ def assign_segment(row):
     elif r <= 2 and f >= 4 and m >= 4:
         return "Can't Lose Them"
 
-    elif r <= 2 and f >= 3 and m >= 3:
-        return "At Risk"
-
-    elif r <= 2 and f <= 2 and m <= 2:
-        return "Hibernating"
+    elif r <= 2 and f >= 3:
+        return "Needs Attention"
 
     elif r == 3 and f <= 2:
         return "About to Sleep"
 
-    elif r >= 4 and f <= 2 and m <= 2:
-        return "Recent Users"
-
     elif r >= 3 and m <= 2:
         return "Price Sensitive"
 
+    elif r <= 2 and f <= 2 and m <= 2:
+        return "Hibernating"
+
     else:
         return "Lost"
+
 
 
 rfm["segment"] = rfm.apply(assign_segment, axis=1)
@@ -105,6 +105,25 @@ dim_customer["Country"] = dim_customer["Country"].str.strip()
 
 rfm = rfm.merge(dim_customer, on="customer_key", how="left")
 
+def country_to_region(country):
+    try:
+        alpha2 = pycountry.countries.lookup(country).alpha_2
+        continent = pc.country_alpha2_to_continent_code(alpha2)
+
+        region_map = {
+            "AS": "Asia",
+            "EU": "Europe",
+            "AF": "Africa",
+            "NA": "North America",
+            "SA": "South America",
+            "OC": "Australia"
+        }
+        return region_map.get(continent, "Others")
+    except:
+        return "Others"
+
+rfm["Region"] = rfm["Country"].apply(country_to_region)
+
 rfm["rfm_score"] = (
     rfm["r_score"].astype(str) +
     rfm["f_score"].astype(str) +
@@ -114,6 +133,7 @@ rfm["rfm_score"] = (
 rfm_final = rfm[[
     "customer_key",
     "Country",
+    "Region",
     "recency",
     "frequency",
     "monetary",
