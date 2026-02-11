@@ -23,4 +23,21 @@ The project cleans and analyzes e-commerce sales data using python and sql ,and 
 2. python
 3. powerbi
 
+## Python Environment Setup
+A virtual environment (`venv`)was created to manage dependencies and ensure reproducibility
+### steps to setup
+**create a virtual environment**:
+```bash
+  python -m venv venv
+  ```
+**Activate the virtual environment**:
+on windows
+```bash
+venv\Scripts\activate
+```
+**Install required packages**:
+```bash
+pip install -r requirements.txt
+```
+## Dashboard
 ![alt text](image.png)
