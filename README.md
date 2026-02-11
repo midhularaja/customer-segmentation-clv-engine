@@ -10,4 +10,17 @@ The project cleans and analyzes e-commerce sales data using python and sql ,and 
 2. Place the CSV in path:  
    ` C:\Customer_Segmentation_CLV_Engine_Project\raw_dataset\OnlineRetail.csv`
    
-  
+## Project Workflow
+1. Raw csv dataset downloaded from koggle
+2. Data stored in sql database and cleaned 
+3. Python used for RFM customer segmentation and market basket analysis
+4. Cleaned & Segmented data loaded into power BI
+5. Dashboard created with KPI cards ,iteractive visuals and filters
+6. Python automation script refreshes the dashboard weekly
+
+## Tools
+1. sql
+2. python
+3. powerbi
+
+![alt text](image.png)
