@@ -1,12 +1,10 @@
 import pandas as pd
-from sqlalchemy import create_engine
+from src.db_connection import get_engine
 from mlxtend.frequent_patterns import fpgrowth, association_rules
 
 
 def main():
-    engine = create_engine(
-        "mysql+pymysql://root:Midhu%4029@localhost/customer_segmentation_db"
-    )
+    engine = get_engine()
 
     fact_sales = pd.read_sql(
         "SELECT InvoiceNo, product_key FROM fact_sales",

@@ -1,15 +1,10 @@
 import pandas as pd
-from sqlalchemy import create_engine
 from sqlalchemy.types import DateTime
 import pycountry
 import pycountry_convert as pc
+from src.db_connection import get_engine
 
-
-engine = create_engine(
-    "mysql+pymysql://root:Midhu%4029@localhost/customer_segmentation_db"
-)
-
-
+engine = get_engine()
 def safe_qcut(series, bins=5, labels=None):
     """qcut fallback if duplicates exist"""
     try:

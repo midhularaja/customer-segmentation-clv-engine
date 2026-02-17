@@ -1,10 +1,8 @@
 import pandas as pd
-from sqlalchemy import create_engine
+from src.db_connection import get_engine
 import matplotlib.pyplot as plt
 
-engine = create_engine(
-    "mysql+pymysql://root:Midhu%4029@localhost/customer_segmentation_db"
-)
+engine = get_engine()
 
 def validate_champions():
     print("Validating 'Champions' segment...")
