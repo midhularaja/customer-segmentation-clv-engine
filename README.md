@@ -1,5 +1,5 @@
-# Customer-Segmentation-CLV
-The project cleans and analyzes e-commerce sales data using python and sql ,and presents the insights through a dashboard that updates automatically on a weekly basis
+# Customer Segmentation & CLV Analytics Pipeline
+This project builds an end-to-end data pipeline for Customer Segmentation and Customer Lifetime Value (CLV) analysis using Python, SQL, and Power BI. The system performs automated weekly data processing and dashboard refresh.
 
 ⚠️ Huge dataset not included in repo due to size constraints.
 
@@ -22,6 +22,7 @@ The project cleans and analyzes e-commerce sales data using python and sql ,and 
 1. sql
 2. python
 3. powerbi
+4. Windows Task Scheduler (Automation)
 
 ## Python Environment Setup
 A virtual environment (`venv`)was created to manage dependencies and ensure reproducibility
@@ -39,5 +40,8 @@ venv\Scripts\activate
 ```bash
 pip install -r requirements.txt
 ```
+## Automation
+A Python automation script is scheduled using Windows Task Scheduler to run weekly.
+
 ## Dashboard
 ![alt text](image.png)
